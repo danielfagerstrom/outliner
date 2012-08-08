@@ -34,7 +34,7 @@ class OutlineDocument
     @list = new List({items})
     console.log JSON.stringify(@list, null, 2)
   save: ->
-    console.log JSON.stringify(@list.items, null, 2)
+    #console.log JSON.stringify(@list.items, null, 2)
     localStorage.setItem "JsViewsTodos", JSON.stringify(@list.items) if useStorage
 
 doc = new OutlineDocument()
@@ -97,14 +97,37 @@ $.link.listTemplate(
   view.parent.parent.data.remove view.index
 )
 
+movedOutline = null
+fromIndex = null
+fromList = null
+
 $(".outlines").sortable
   axis: "y"
   handle: ".handle"
-  update: (event, ui) ->
+  connectWith: ".outlines"
+  start: (event, ui) ->
     fromView = $.view(ui.item)
-    from = fromView.index
-    to = $(ui.item).index()
-    fromView.parent.parent.data.move from, to
+    movedOutline = fromView.data
+    fromIndex = fromView.index
+    fromList = fromView.parent.parent.data
+  update: (event, ui) ->
+    parentNodes = ui.item.parent()
+    if parentNodes.length
+      toList = $.view(parentNodes).data
+      fromView = $.view(ui.item)
+      toIndex = $(ui.item).index()
+      if fromList is toList
+        fromList.move fromIndex, toIndex
+      else
+        if fromList.items[fromIndex] is movedOutline
+          fromList.remove fromIndex
+          toList.insert movedOutline, toIndex
+        else
+          console.error "trying to move twice"
+  stop: (event, ui) ->
+    movedOutline = null
+    fromIndex = null
+    fromList = null
 
 # Connect change event to contentEditable
 $('[contenteditable]')
