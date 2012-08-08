@@ -33,7 +33,7 @@
   <!-- Templates -->
   <script type="text/x-jsrender" id="item-template">
     <li>
-      <div data-link="{:text}" contentEditable="true" class="outline-content"></div>
+      <div data-link="{:text:}" contentEditable="true" class="outline-content"></div>
       <span class="outline-destroy pull-right"><i class="icon-remove"></i></span>
       <span class="handle pull-right"><i class="icon-move"></i></span>
       {{for children tmpl="listTemplate"/}}

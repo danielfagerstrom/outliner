@@ -42,10 +42,9 @@ list.open()
 $.views.helpers onAfterChange: (ev) ->
   switch ev.type
     when "change"
-      view = $.view(@src)
       switch @path
         when "text"
-          ;
+          list.save()
     when "arrayChange"
       list.save()
 
@@ -102,3 +101,25 @@ $(".outlines").sortable
     from = fromView.index
     to = $(ui.item).index()
     fromView.parent.parent.data.move from, to
+
+# Connect change event to contentEditable
+$('[contenteditable]')
+  .live 'focus', ->
+    $this = $(this)
+    $this.data 'before', $this.html()
+    return $this
+  .live 'blur', -> # 'blur keyup paste'
+    $this = $(this)
+    if $this.data('before') isnt $this.html()
+      $this.data 'before', $this.html()
+      $this.trigger('change')
+    return $this
+
+# Hook into jsviews mechanism for linking from and to elements and override the default behaviour for
+# div to be only readable (fromAttr == ""). It would be better to set the fromAttr for contentEditable
+# elements, but there is no hook for that.
+$.views.merge["div"] =
+  from:
+    fromAttr: "text"
+  to:
+    toAttr: "text"
