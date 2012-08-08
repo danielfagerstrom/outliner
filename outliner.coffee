@@ -23,18 +23,22 @@ class List
       demotee = @items[index]
       @remove index
       @items[index - 1].children.insert demotee
+
+class OutlineDocument
+  constructor: ->
+    @list = new List()
   open: ->
     # Intialize from local storage
-    @items = useStorage and $.parseJSON(localStorage.getItem("JsViewsTodos")) or []
-    console.log @items
-    @items = (new Outline(item) for item in @items)
-    console.log JSON.stringify(@items, null, 2)
+    items = useStorage and $.parseJSON(localStorage.getItem("JsViewsTodos")) or []
+    console.log items
+    @list = new List({items})
+    console.log JSON.stringify(@list, null, 2)
   save: ->
-    console.log JSON.stringify(@items, null, 2)
-    localStorage.setItem "JsViewsTodos", JSON.stringify(@items) if useStorage
+    console.log JSON.stringify(@list.items, null, 2)
+    localStorage.setItem "JsViewsTodos", JSON.stringify(@list.items) if useStorage
 
-list = new List()
-list.open()
+doc = new OutlineDocument()
+doc.open()
 
 # Helper functions
 
@@ -44,9 +48,9 @@ $.views.helpers onAfterChange: (ev) ->
     when "change"
       switch @path
         when "text"
-          list.save()
+          doc.save()
     when "arrayChange"
-      list.save()
+      doc.save()
 
 # Compile template
 $.templates
@@ -56,13 +60,13 @@ $.templates
 # UI Event bindings
 $("#new-outline").keypress (ev) ->
   if ev.keyCode is 13
-    list.insert new Outline(text: @value)
+    doc.list.insert new Outline(text: @value)
     @value = ""
 
 # Link UI, and handle changes to 'text' property of items
 $.link.listTemplate(
   "#outline-list",
-  list
+  doc.list
 ).on("keydown", "div", (ev) ->
   view = $.view(this)
   switch ev.keyCode
