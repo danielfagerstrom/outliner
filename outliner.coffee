@@ -82,12 +82,21 @@ $.link.listTemplate(
       newOutline.focus()
       ev.preventDefault()
     when 38 # up arrow
-      prevOutline = $(view.parent.views[view.index - 1].nodes, "div").contents()
-      prevOutline.focus()
+      li = $(this).closest("li")
+      if li.is("li:first-child")
+        prevOrParent = li.parent().closest("li")
+      else
+        prevOrParent = li.prev("li").find("li").andSelf().last()
+      prevOrParent.find("> div").focus()
       ev.preventDefault()
     when 40 # down arrow
-      nextOutline = $(view.parent.views[view.index + 1].nodes, "div").contents()
-      nextOutline.focus()
+      li = $(this).closest("li")
+      firstLiChild = li.find("li")
+      if firstLiChild.length
+        childOrNext = firstLiChild.first()
+      else
+        childOrNext = li.parents("li").andSelf().next("li").last()
+      childOrNext.find("> div").focus()
       ev.preventDefault()
 ).on("input", "div", (ev) ->
   view = $.view(this)
