@@ -2,19 +2,20 @@
 useStorage = window.JSON and window.localStorage
 
 class Outline
-  constructor: ({@text, @children} = {}) ->
+  constructor: ({@text, @children} = {}, @_parent) ->
     @text ?= ""
-    @children = new List(@children)
+    @children = new List(@children, @)
 
 class List
-  constructor: ({@items} = {}) ->
-    # Intialize from local storage
+  constructor: ({@items, @_parent} = {}, @_parent) ->
     @items ?= []
-    @items = (new Outline(item) for item in @items)
+    @items = (new Outline(item, @) for item in @items)
   remove: (index) ->
+    @items[index]._parent = null
     $.observable(@items).remove index, 1
   insert: (item, index) ->
     index ?= @items.length
+    item._parent = @
     $.observable(@items).insert index, item
   move: (from, to) ->
     $.observable(@items).move from, to
@@ -23,19 +24,26 @@ class List
       demotee = @items[index]
       @remove index
       @items[index - 1].children.insert demotee
+  promote: (index) ->
+    promotee = @items[index]
+    parentList = @_parent?._parent
+    if parentList
+      indexInParentList = parentList.items.indexOf @_parent
+      @remove index
+      parentList.insert promotee, indexInParentList + 1
 
 class OutlineDocument
   constructor: ->
-    @list = new List()
+    @list = new List({}, @)
   open: ->
     # Intialize from local storage
     items = useStorage and $.parseJSON(localStorage.getItem("JsViewsTodos")) or []
     console.log items
-    @list = new List({items})
-    console.log JSON.stringify(@list, null, 2)
+    @list = new List({items}, @)
   save: ->
-    #console.log JSON.stringify(@list.items, null, 2)
-    localStorage.setItem "JsViewsTodos", JSON.stringify(@list.items) if useStorage
+    filterCircular = (key, value) -> if key in ["_parent"] then undefined else value
+    console.log JSON.stringify(@list.items, filterCircular, 2)
+    localStorage.setItem "JsViewsTodos", JSON.stringify(@list.items, filterCircular) if useStorage
 
 doc = new OutlineDocument()
 doc.open()
@@ -72,10 +80,10 @@ $.link.listTemplate(
   switch ev.keyCode
     when 9 # tab
       if ev.shiftKey
-        console.log "shift+tab"
+        view.parent.parent.data.promote view.index
       else
         view.parent.parent.data.demote view.index
-        ev.preventDefault()
+      ev.preventDefault()
     when 13 # enter
       view.parent.parent.data.insert new Outline(), view.index + 1
       newOutline = $(view.parent.views[view.index + 1].nodes, "div").contents()
